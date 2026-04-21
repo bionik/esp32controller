@@ -1,0 +1,47 @@
+# KiCad specific ignores
+*.lck
+_autosave-*
+*-backups/
+fp-info-cache
+#auto_saved_files#
+
+# PlatformIO specific ignores (firmware folder)
+.pio/
+.vscode/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Build outputs
+build/
+dist/
+*.o
+*.elf
+*.bin
+*.hex
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# IDE specific
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+*.log
