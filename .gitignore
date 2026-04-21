@@ -30,6 +30,7 @@ dist/
 # Temporary files
 *.tmp
 *.temp
+*.bak
 *.swp
 *.swo
 *~
