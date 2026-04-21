@@ -1130,7 +1130,7 @@
 					)
 				)
 			)
-			(property "Footprint" "bionik:ESP32S3_supermini"
+			(property "Footprint" "project_parts:ESP32S3_supermini"
 				(at 0 0 0)
 				(effects
 					(font
@@ -3698,7 +3698,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "85550fa4-d241-49cf-a72e-fcef2efb6e04")
-		(property "Reference" "IC1"
+		(property "Reference" "e"
 			(at 12.7 168.2749 0)
 			(effects
 				(font
@@ -3716,7 +3716,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "bionik:ESP32S3_supermini"
+		(property "Footprint" "project_parts:ESP32S3_supermini"
 			(at 27.94 165.1 0)
 			(effects
 				(font
@@ -3800,7 +3800,7 @@
 		(instances
 			(project ""
 				(path "/2c05cc86-0408-45ea-998e-7b2d197a93f7"
-					(reference "IC1")
+					(reference "e")
 					(unit 1)
 				)
 			)
