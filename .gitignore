@@ -19,6 +19,10 @@ ENV/
 env.bak/
 venv.bak/
 
+# Credentials - keep secrets safe!
+**/credentials.h
+firmware/src/credentials.h
+
 # Build outputs
 build/
 dist/

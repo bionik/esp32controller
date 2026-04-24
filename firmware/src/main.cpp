@@ -6,12 +6,22 @@
 // --- Configuration ---
 #define DEBUG 1
 
-const char* ssid = "YOUR_WIFI_SSID";
-const char* password = "YOUR_WIFI_PASSWORD";
+// Try to include credentials from separate file
+// If credentials.h doesn't exist, fall back to defaults below
+#if __has_include("credentials.h")
+    #include "credentials.h"
+#else
+    #warning "credentials.h not found, using default credentials"
+    #define WIFI_SSID "YOUR_WIFI_SSID"
+    #define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
+    #define OTA_USERNAME "admin"
+    #define OTA_PASSWORD "secure123"
+#endif
 
-// OTA Credentials
-const char* ota_user = "admin";
-const char* ota_pass = "secure123"; 
+const char* ssid = WIFI_SSID;
+const char* password = WIFI_PASSWORD;
+const char* ota_user = OTA_USERNAME;
+const char* ota_pass = OTA_PASSWORD; 
 
 struct ControlBinding {
     const char* label;
