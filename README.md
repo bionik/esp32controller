@@ -17,10 +17,12 @@ Functionality:
 * If a websocket, bluetooth, usb connection is lost, always reset the pins to clear stuck state.
 
 Led color explanations:
-When red led is shown, ESP32 is not connected to wifi
-When green led is shown, user is connected to the websocket
-When blue led is shown, bluetooth controller is connected - regardless of the wifi or websocket status
-When in pairing mode, led quickly flashes green on new device, red if none found, blue if existing device is connected. Then returns to default state.
+* When red led is shown, ESP32 is not connected to wifi
+* When green led is shown, user is connected to the websocket
+* When purple led is show, usb is connected
+* When blue led is shown, bluetooth controller is connected - regardless of the wifi or websocket status
+* When in pairing mode, led quickly flashes green on new device, red if none found, blue if existing device is connected. Then returns to default state.
+* The priority of the color is in this order.
 
 ## Project Files
 
