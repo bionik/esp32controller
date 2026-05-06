@@ -1,28 +1,24 @@
 # esp32controller
 
-WiFi-enabled ESP32S3 game controller with web interface and OTA updates, for Amiga, C64 etc.
-ESP hosts a websocket server which can be used to change the state of controller pins.
+WiFi-enabled ESP32S3 game controller with web interface and OTA updates, for Amiga. C64 could be possible with external power and filtering.
+ESP hosts a websocket server which can be used to change the state of controller pins. Bluetooth controllers are also supported.
 
 Uses ESP32S3 supermini controller
 
 Future plans:
-* To be able to connect an usb controller to pass controls to the game console.
-* Support for bluetooth connectivity (BLE HID controllers, ps5, switch etc).
+* To be able to connect an usb controller to pass controls to the game console. This might not be a good idea for "powered" controllers (rumble, battery charging etc)
 
 Functionality:
-* Hold the boot button for 5 seconds to pair with a controller in pairing mode. The pairing mode is searching for 20 seconds. 
-* Hold boot button for 10 seconds to forget paired controller.
-* During boot, if an already paired controller is found, it is connected to again.
-* All the connectivity works at the same time, last input overrides the state.
-* If a websocket, bluetooth, usb connection is lost, always reset the pins to clear stuck state.
+* Reboot the device to connect to a bluetooth controller in pairing mode.
+* If a websocket or bluetooth is lost, always reset the pins to clear stuck state.
 
 Led color explanations:
-* When red led is shown, ESP32 is not connected to wifi
-* When green led is shown, user is connected to the websocket
-* When purple led is show, usb is connected
-* When blue led is shown, bluetooth controller is connected - regardless of the wifi or websocket status
-* When in pairing mode, led quickly flashes green on new device, red if none found, blue if existing device is connected. Then returns to default state.
-* The priority of the color is in this order.
+* When green led is shown, ESP32 is idle and not connected to wifi or bluetooth.
+* When red led is show, wifi is connected but websocket and bluetooth are not connected.
+* When yellow led is shown, wifi is connected and user is connected to the websocket.
+* When blue led is shown, bluetooth controller is connected.
+* When magenta/purple led is shown, wifi is connected but websocket is not connected, bluetooth is connected.
+* When white led is shown, wifi, websocket and bluetooth are connected.
 
 ## Project Files
 
