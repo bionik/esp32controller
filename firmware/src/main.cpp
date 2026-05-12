@@ -24,7 +24,7 @@
 
 // Boot button configuration
 #define BOOT_BUTTON 0  // GPIO 0 is typically the BOOT button on ESP32
-#define PAIRING_HOLD_TIME 3000  // 3 seconds to enter pairing mode
+#define PAIRING_HOLD_TIME 2200  // How long press to enter pairing mode
 #define PAIRING_TIMEOUT 20000   // 20 seconds pairing timeout
 #define PAIRING_BLINK_INTERVAL 100  // Fast blink interval in ms
 
@@ -210,15 +210,27 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
 }
 
 void startPairingMode() {
-    if (DEBUG) Serial.println("Entering pairing mode - forgetting all devices");
+    if (DEBUG) {
+        Serial.println("=== Entering pairing mode ===");
+        Serial.println("Forgetting all paired devices and enabling scanning...");
+    }
+    
     pairingMode = true;
     pairingStartTime = millis();
     lastBlinkTime = 0;
     blinkState = false;
     
-    // Forget all paired devices and enable scanning
+    // Reset connection flag
+    btConnected = false;
+    resetPins();
+    
+    // Forget all paired devices (this also disconnects any connected controllers)
     BP32.forgetBluetoothKeys();
+    
+    // Enable scanning for new connections
     BP32.enableNewBluetoothConnections(true);
+    
+    if (DEBUG) Serial.println("Pairing mode active - put your controller in pairing mode now!");
     
     updateLedState();
 }
@@ -226,9 +238,12 @@ void startPairingMode() {
 void stopPairingMode(bool success) {
     if (DEBUG) {
         if (success) {
-            Serial.println("Pairing mode ended - device connected");
+            Serial.println("=== Pairing mode ended - device connected ===");
         } else {
-            Serial.println("Pairing mode timeout - no device found");
+            Serial.println("=== Pairing mode timeout - no device found ===");
+            Serial.println("Disabling new Bluetooth connections");
+            // Disable further scanning to save power
+            BP32.enableNewBluetoothConnections(false);
         }
     }
     pairingMode = false;
@@ -236,11 +251,17 @@ void stopPairingMode(bool success) {
 }
 
 void onConnectedBTController(ControllerPtr ctl) {
-    if (DEBUG) Serial.println("Bluetooth Controller connected");
+    if (DEBUG) {
+        Serial.println("=== Bluetooth Controller connected ===");
+        Serial.printf("Controller model: %s\n", ctl->getModelName().c_str());
+    }
+    
     btConnected = true;
     
-    // If we were in pairing mode, exit it successfully
+    // If we were in pairing mode, exit it successfully and disable further scanning
     if (pairingMode) {
+        if (DEBUG) Serial.println("Disabling new Bluetooth connections");
+        BP32.enableNewBluetoothConnections(false);
         stopPairingMode(true);
     } else {
         updateLedState();
@@ -248,7 +269,10 @@ void onConnectedBTController(ControllerPtr ctl) {
 }
 
 void onDisconnectedBTController(ControllerPtr ctl) {
-    if (DEBUG) Serial.println("Bluetooth Controller disconnected");
+    if (DEBUG) {
+        Serial.println("=== Bluetooth Controller disconnected ===");
+    }
+    
     btConnected = false;
     updateLedState();
     resetPins();
