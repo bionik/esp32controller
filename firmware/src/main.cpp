@@ -3,6 +3,7 @@
 #include <ESPAsyncWebServer.h>
 #include <ElegantOTA.h>
 #include <Bluepad32.h>
+#include <cstring>
 
 // Try to include credentials from separate file
 // If credentials.h doesn't exist, fall back to defaults below
@@ -97,6 +98,29 @@ const char* password = WIFI_PASSWORD;
 const char* ota_user = OTA_USERNAME;
 const char* ota_pass = OTA_PASSWORD; 
 
+void resetPins();
+void setControlPin(const char* label, bool state);
+
+void onWiFiEvent(WiFiEvent_t event) {
+    switch (event) {
+        case SYSTEM_EVENT_STA_GOT_IP:
+            wifiConnected = true;
+            if (DEBUG) Serial.printf("WiFi connected: %s\n", WiFi.localIP().toString().c_str());
+            updateLedState();
+            break;
+        case SYSTEM_EVENT_STA_DISCONNECTED:
+            if (wifiConnected) {
+                wifiConnected = false;
+                if (DEBUG) Serial.println("WiFi disconnected");
+                resetPins();
+                updateLedState();
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 struct ControlBinding {
     const char* label;
     int pin;
@@ -115,6 +139,9 @@ ControlBinding controlPins[] = {
 const int numControls = sizeof(controlPins) / sizeof(controlPins[0]);
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
+
+// Currently connected Bluetooth controller (if any)
+ControllerPtr activeController = nullptr;
 
 void resetPins() {
     for (int i = 0; i < numControls; i++) {
@@ -163,16 +190,32 @@ void handleCommand(String message) {
     String action = message.substring(separatorIdx + 1);
     bool state = (action == "down");
 
+    // Use the centralized control setter
+    setControlPin(label.c_str(), state);
+}
+
+// Set a control pin by its ascii label ("up", "down", "button1", ...)
+void setControlPin(const char* label, bool state) {
+    if (DEBUG) Serial.printf("setControlPin called: '%s' -> %s\n", label, state ? "true" : "false");
     for (int i = 0; i < numControls; i++) {
-        if (label == controlPins[i].label) {
-            digitalWrite(controlPins[i].pin, state);
-            return; 
+        if (strcmp(label, controlPins[i].label) == 0) {
+            digitalWrite(controlPins[i].pin, state ? HIGH : LOW);
+            if (DEBUG) Serial.printf("Control '%s' -> %s (GPIO %d)\n", label, state ? "HIGH" : "LOW", controlPins[i].pin);
+            return;
         }
     }
+    if (DEBUG) Serial.printf("Unknown control '%s'\n", label);
 }
 
 void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type,
              void *arg, uint8_t *data, size_t len) {
+    if (DEBUG) {
+        if (client) {
+            Serial.printf("WebSocket event %u for client #%u\n", type, client->id());
+        } else {
+            Serial.printf("WebSocket event %u\n", type);
+        }
+    }
     switch (type) {
         case WS_EVT_CONNECT:
             if (DEBUG) Serial.printf("WebSocket client #%u connected\n", client->id());
@@ -257,6 +300,8 @@ void onConnectedBTController(ControllerPtr ctl) {
     }
     
     btConnected = true;
+    // Track the active controller so we can poll its inputs
+    activeController = ctl;
     
     // If we were in pairing mode, exit it successfully and disable further scanning
     if (pairingMode) {
@@ -276,10 +321,15 @@ void onDisconnectedBTController(ControllerPtr ctl) {
     btConnected = false;
     updateLedState();
     resetPins();
+    
+    // Clear active controller reference
+    if (activeController == ctl) activeController = nullptr;
 }
 
 void setup() {
     Serial.begin(115200);
+
+    BP32.enableNewBluetoothConnections(false);
 
     // Initialize built-in RGB LED
 #ifdef RGB_BUILTIN
@@ -295,15 +345,18 @@ void setup() {
     }
     resetPins();
 
+    if (DEBUG) Serial.printf("Connecting to WiFi SSID '%s'...\n", ssid);
+    WiFi.mode(WIFI_STA);
+    WiFi.onEvent(onWiFiEvent);
     WiFi.begin(ssid, password);
-    while (WiFi.status() != WL_CONNECTED) { delay(500); }
-    
-    // WiFi connected
-    wifiConnected = true;
-    updateLedState();
+
+    /*server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+        request->send(200, "text/plain", "Hello! Connect with websocket to control the device.");
+    });*/
 
     ws.onEvent(onEvent);
     server.addHandler(&ws);
+    if (DEBUG) Serial.println("WebSocket handler attached at /ws");
     
     // Setup ElegantOTA with Password and Hooks
     ElegantOTA.begin(&server, ota_user, ota_pass); 
@@ -318,6 +371,26 @@ void setup() {
 
 void loop() {
     BP32.update();
+    // If a Bluetooth controller is connected, poll its state and map to controls
+    if (activeController && activeController->hasData()) {
+        // Use digital D-Pad values
+        uint8_t d = activeController->dpad();
+        bool up = (d & DPAD_UP);
+        bool down = (d & DPAD_DOWN);
+        bool left = (d & DPAD_LEFT);
+        bool right = (d & DPAD_RIGHT);
+
+        setControlPin("up", up);
+        setControlPin("down", down);
+        setControlPin("left", left);
+        setControlPin("right", right);
+
+        // Map face buttons to button1..3 - y for button3, since it's seldomly used. x for button2 to allow different play styles
+        setControlPin("button1", activeController->a());
+        setControlPin("button2", activeController->b() || activeController->x());
+        setControlPin("button3", activeController->y());
+    }
+    
     ElegantOTA.loop();
     ws.cleanupClients();
     
@@ -354,7 +427,7 @@ void loop() {
             if (DEBUG) Serial.println("WiFi disconnected");
             resetPins(); // Safety reset on WiFi loss
         } else {
-            if (DEBUG) Serial.println("WiFi reconnected");
+            if (DEBUG) Serial.printf("WiFi connected: %s\n", WiFi.localIP().toString().c_str());
         }
         updateLedState();
     }
