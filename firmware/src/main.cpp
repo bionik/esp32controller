@@ -21,7 +21,7 @@
 #define DEBUG 1
 
 // Built-in RGB LED Configuration
-#define RGB_BRIGHTNESS 64  // Brightness (0-255)
+#define RGB_BRIGHTNESS 32  // Brightness (0-255)
 
 // Boot button configuration
 #define BOOT_BUTTON 0  // GPIO 0 is typically the BOOT button on ESP32
@@ -329,14 +329,16 @@ void onDisconnectedBTController(ControllerPtr ctl) {
 void setup() {
     Serial.begin(115200);
 
-    BP32.enableNewBluetoothConnections(false);
+    if (DEBUG) Serial.println("Booting esp32controller...");
+
+    //BP32.enableNewBluetoothConnections(false);
 
     // Initialize built-in RGB LED
 #ifdef RGB_BUILTIN
     pinMode(RGB_BUILTIN, OUTPUT);
 #endif
     updateLedState(); // Show initial state (all disconnected - green)
-
+    
     // Initialize boot button with internal pullup
     pinMode(BOOT_BUTTON, INPUT_PULLUP);
 
@@ -344,15 +346,21 @@ void setup() {
         pinMode(controlPins[i].pin, OUTPUT);
     }
     resetPins();
+    delay(200); 
 
     if (DEBUG) Serial.printf("Connecting to WiFi SSID '%s'...\n", ssid);
     WiFi.mode(WIFI_STA);
+    WiFi.setTxPower(WIFI_POWER_8_5dBm);
+
     WiFi.onEvent(onWiFiEvent);
+
+    delay(500); 
+
     WiFi.begin(ssid, password);
 
-    /*server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
         request->send(200, "text/plain", "Hello! Connect with websocket to control the device.");
-    });*/
+    });
 
     ws.onEvent(onEvent);
     server.addHandler(&ws);
