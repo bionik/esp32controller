@@ -1,27 +1,37 @@
 # esp32controller
 
-WiFi-enabled ESP32S3 game controller with web interface and OTA updates, for Amiga. C64 could be possible with external power and filtering.
-ESP hosts a websocket server which can be used to change the state of controller pins. Bluetooth controllers are also supported.
+WiFi-enabled ESP32S3 game controller interface with WebSocket control, Bluetooth gamepad support, and OTA firmware updates.
 
-Uses ESP32S3 supermini controller
+The ESP32S3 runs a small HTTP/WebSocket server for remote control of GPIO pins, and also supports Bluetooth controllers through Bluepad32. The design is aimed at controlling classic systems such as the Amiga, with the option to adapt to other consoles if properly powered and filtered.
 
-Future plans:
-* To be able to connect an usb controller to pass controls to the game console. This might not be a good idea for "powered" controllers (rumble, battery charging etc)
+Features:
+* WiFi connection using credentials from `firmware/src/credentials.h` or fallback defaults.
+* WebSocket server at `/ws` for remote button press/release commands.
+* ElegantOTA support with authenticated OTA updates.
+* Bluetooth controller support using Bluepad32.
+* Boot-button pairing mode: long-press the BOOT button to enter Bluetooth pairing.
+* Only the last paired Bluetooth controller is accepted after pairing mode, all others are rejected.
+* GPIO safety fallback: all control pins are reset when WiFi, WebSocket, or Bluetooth disconnects.
+* Phone keypad mapping on websocket: numeric keys `2/4/6/8` map to directions and `1/3/5` map to buttons.
+* Built-in RGB LED status reporting for connection states and pairing.
 
-Functionality:
-* Reboot the device to connect to a bluetooth controller in pairing mode.
-* If a websocket or bluetooth is lost, always reset the pins to clear stuck state.
+LED color guide:
+* Green: idle / no WiFi and no Bluetooth connected.
+* Red: WiFi connected but no WebSocket client and no Bluetooth controller.
+* Yellow: WiFi connected and WebSocket client connected.
+* Blue: Bluetooth controller connected.
+* Magenta: WiFi connected and Bluetooth connected, but no WebSocket client.
+* White: WiFi, WebSocket, and Bluetooth all connected.
+* Fast blinking blue: Bluetooth pairing mode active.
 
-Led color explanations:
-* When green led is shown, ESP32 is idle and not connected to wifi or bluetooth.
-* When red led is show, wifi is connected but websocket and bluetooth are not connected.
-* When yellow led is shown, wifi is connected and user is connected to the websocket.
-* When blue led is shown, bluetooth controller is connected.
-* When magenta/purple led is shown, wifi is connected but websocket is not connected, bluetooth is connected.
-* When white led is shown, wifi, websocket and bluetooth are connected.
+Firmware notes:
+* Control pins are defined in `firmware/src/main.cpp` and are driven LOW by default for safety.
+* WiFi tries to reconnect automatically after a delay.
+* Bluetooth pairing mode times out after 20 seconds if no device is found.
+* On OTA start, GPIOs are reset and the device restarts after a successful update.
 
 ## Project Files
 
 - **Hardware**: KiCad PCB design files (`esp32controller.kicad_*`) with custom ESP32S3 Supermini footprint
-- **Firmware**: PlatformIO project in `firmware/` with WiFi control server and ElegantOTA support
+- **Firmware**: PlatformIO project in `firmware/` with WiFi server, WebSocket control, Bluepad32, and ElegantOTA support
 - **Libraries**: Custom symbol (`project_parts.kicad_sym`) and footprint (`project_parts.pretty/`) libraries
