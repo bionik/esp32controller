@@ -146,6 +146,21 @@ ControlBinding controlPins[] = {
 };
 
 const int numControls = sizeof(controlPins) / sizeof(controlPins[0]);
+// Phone keypad -> control label translation (index = digit)
+// 2 -> up, 4 -> left, 6 -> right, 8 -> down,
+// 1 -> button1, 3 -> button2, 5 -> button3
+const char* phoneMap[10] = {
+    nullptr,      // 0
+    "button1",   // 1
+    "up",        // 2
+    "button2",   // 3
+    "left",      // 4
+    "button3",   // 5
+    "right",     // 6
+    nullptr,      // 7
+    "down",      // 8
+    nullptr       // 9
+};
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 
@@ -192,7 +207,23 @@ void handleCommand(String message) {
     String action = message.substring(separatorIdx + 1);
     bool state = (action == "down");
 
-    setControlPin(label.c_str(), state);
+    // Translate numeric phone keypad inputs (e.g. "8:down") to control labels
+    const char* resolvedLabel = label.c_str();
+    if (label.length() == 1) {
+        char c = label.charAt(0);
+        if (c >= '0' && c <= '9') {
+            const char* mapped = phoneMap[c - '0'];
+            if (mapped != nullptr) {
+                resolvedLabel = mapped;
+                if (DEBUG) Serial.printf("Translated phone key '%c' -> %s\n", c, resolvedLabel);
+            } else {
+                if (DEBUG) Serial.printf("Phone key '%c' has no mapping, ignoring\n", c);
+                return; // ignore unmapped numeric keys
+            }
+        }
+    }
+
+    setControlPin(resolvedLabel, state);
 }
 
 void setControlPin(const char* label, bool state) {
